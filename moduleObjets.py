@@ -54,10 +54,56 @@
 
 # le id_objet est une variable static qui ne sert qu'a compter on est rendu au
 # combien ieme objet cree
-# on peut le mettre dans le module oÃƒÂº on cree les objets
+# on peut le mettre dans le module oÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âº on cree les objets
 # le global fait en sorte que partout dans la page la variable et son contenu
 # est garder MEME DANS LES AUTRE FONCTIONS QUI SONT ENFANT DE LEMPLACEME
 # DE LA VARIABLE: NE PAS REUTILISER
+
+
+
+#-------------------------------------------
+
+class Joueur():
+    def __init__(self, ID, name):
+        self.name = name
+        self.ID = ID
+        self.currentTime = 0
+        self.ere = 1
+        self.maxUnits = 200
+        self.ressources = [0,0,0,0,0]
+        # Index des ressources:
+        # Nourriture : 0
+        # BOis: 1
+        # Pierre : 2
+        # Or : 3
+        # Energie : 4
+
+        self.allies = []
+        self.units =[]
+        self.buildings =[]
+        self.unitsSelectionne =[]
+
+
+
+    def changerEre():
+        pass
+
+    def construireBuilding(self, idBuilding, posX ,posY ):
+        pass
+
+    def creerUnit(self, idBuilding, type ):
+
+        pass
+
+    def changerAllies():
+        pass
+
+    def envoyerRessources():
+        pass
+
+
+
+
 
 id_objet = 0
 
@@ -159,22 +205,40 @@ class Guerrier(Unit):
             self.hpActuel -= degatsRecus -self.defense
 
 
-class Building(Unit):
-    def __init__ (self, ownerID, posX, posY):
-        Unit.__init__(self, ownerID, posX, posY)
-        self.type = "Building"
-        #valeur arbitraire
-        self.hpActuel = 1000
-        self.hpMax = self.hpActuel
-        self.longueur = 100
-        self.largeur = 100
-        self.delaiDeConstruction = 20000
-        self.champDeVision = 50
 
-        #isAlive est herite de Unit
-    def deplacer(self):
-        pass
-        #deplacer est surcharger pour quon ne puisse pas deplace un building
+class Building():
+
+    def __init__(self, ownerID, posX, posY):
+        global id_objet
+        id_objet += 1
+        self.id = id_objet
+        self.ownerID = ownerID
+
+        self.type = "Building"
+
+        #le hp d'un building generique est -1
+        self.hpMax = -1
+        self.hpActuel = self.hpMax
+        self.posX = posX
+        self.posY = posY
+        #le champs de vision est arbitraire et devrait dependre du type du Unit
+        self.champDeVision = -1
+        #idem pour le delai de Construction
+        self.delaiDeConstruction = -1
+
+    def isAlive(self):
+        if self.hpActuel <= 0:
+            return False
+        else:
+            return True
+
+
+    def recevoirDegats(self, degatsRecus):
+        if degatsRecus > self.hpActuel:
+            self.hpActuel = 0
+        else :
+            self.hpActuel -= degatsRecus
+
 
 class TownCenter(Building):
     """ bref Desc des fonctions:
@@ -185,13 +249,15 @@ class TownCenter(Building):
         la liste creationQueue et change la variable tempsRestant pour le
         delaiDeConstruction de l'Unit dans l'index 0 -
         -- retourne True si la queue est pas pleine et false si la queue est
-        pleine
+        pleine--
 
         unitSortir(self) -- fait en sorte de pop la premiere Unit de la queue du
         building, retourne le unit en sois et met le tempsRestant egal au
         prochain sil y en a
         ps. ceci ne prend pas en arguments le tempsRestant mais pourrait en
         dependre
+
+        les deux methodes font en sorte que la queue soit FIFO( first in, first out)
 
 
 
@@ -248,6 +314,73 @@ class TownCenter(Building):
 
         return UnitCree
 
+    def annulationUnit(self):
+        if len(self.creationQueue != 0):
+            self.creationQueue.pop()
+            return True
+        else :
+            return False
+
+class Barrack(Building):
+    def __init__(self, ownerID, posX, posY):
+        Building.__init__(ownerID,posX,posY)
+        self.type="Barrack"
+
+        self.hpActuel = 1000
+        self.hpMax = self.hpActuel
+        self.longueur = 100
+        self.largeur = 100
+        self.delaiDeConstruction = 20000
+        self.champDeVision = 50
+
+        self.uniteCreable = [Guerrier]
+        self.creationQueue = []
+        self.tempsRestant = 0
+
+    def uniteCreable(self):
+        return self.uniteCreable
+
+    def createUnit(self, Unit):
+
+        if len(self.creationQueue) < 5:
+            self.creationQueue.insert(1,Unit)
+        else:
+            print("la queue est pleine")
+            return False
+
+        if self.creationQueue[0] == Unit:
+            self.tempsRestant = Unit.delaiDeConstruction
+
+        return True
+
+    def unitSortir(self):
+        # a appeler quand le temps Restant atteint 0
+        UnitCree = None
+        if len(self.creationQueue) != 0:
+            UnitCree = self.creationQueue[0]
+            self.creationQueue.pop(0)
+            self.tempsRestant =0
+            # creer l'objet dans le canvas I guess
+        else:
+            return false
+
+        if len(self.creationQueue) !=0:
+            self.tempsRestant = self.creationQueue[0].delaiDeConstruction
+
+
+        return UnitCree
+
+    def annulationUnit(self):
+        if len(self.creationQueue != 0):
+            self.creationQueue.pop()
+            return True
+        else :
+            return False
+
+
+
+
+
 
 
 
@@ -272,7 +405,7 @@ def main():
     print("vie apres dmg de unit1 : %d" % unit2.hpActuel)
     """
 
-    """"
+
 
     building = TownCenter("Tom",0, 0)
 
@@ -288,10 +421,16 @@ def main():
 
     Unit1 =building.unitSortir()
 
-    print(Unit1.id)
+    print (" id de l'unit %s" % Unit1.id)
 
     print(Unit1.type)
-    """
+
+    print("id du towncenter %s" % building.id)
+
+    building2 = TownCenter("Henry", 1, 1)
+
+    print("id du towncenter 2 :%s" % building2.id)
+
 
 
 
